@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{%block content %}
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for msg in messages %}
+            <p>{{ msg }}</p>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<p>This is the register page</p>
+<form action="#" method = "POST">
+    <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username">
+    </div>
+
+    <div>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email">
+    </div>
+
+    <div>
+        <label for="pass">Password (6 character minimum):</label>
+        <input type="password" id="pass" name="password" value = minlength="6" required>
+    </div>
+    <button type = "submit">Submit</button>
+</form>
+{% endblock %}
