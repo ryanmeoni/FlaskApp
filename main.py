@@ -20,17 +20,17 @@ def login():
         password = request.form["password"]
         session["username"] = username
         session["password"] = password
-        return redirect(url_for("user"))
+        return redirect(url_for("home"))
 
 
 @app.route("/user/")
 def user():
-    if ("username" in session):
+    if ("username" in session and "email" in session):
         return render_template("user.html", username = session["username"], email = session["email"])
 
     else:
         flash("You are not logged in, please login to access user page.")
-        return redirect(url_for("login"))
+        return redirect(url_for("register"))
 
 
 @app.route("/logout/")
