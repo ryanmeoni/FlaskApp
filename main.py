@@ -1,5 +1,5 @@
 from flask import Flask, redirect, url_for, render_template, request, session, flash
-import dbUserFuncs
+import dbFuncs
 
 app = Flask(__name__)
 app.secret_key = "hello"
@@ -14,6 +14,11 @@ def home():
 # Login page
 @app.route("/login/", methods=["POST", "GET"])
 def login():
+    # Check if already logged in
+    if ("username" in session and "email" in session and "password" in session):
+        flash("You are already logged in.")
+        return redirect(url_for("home"))
+
     if request.method == "GET":
         return render_template("login.html")
 
@@ -21,17 +26,20 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        if dbUserFuncs.check_if_user_exists(username) is False:
+        if dbFuncs.check_if_user_exists(username) is False:
             flash("No account with that username, try again.", "info")
             return render_template("login.html")
 
         else:
-            currUser = dbUserFuncs.get_user(username)
+            # Get user from database. currUser is a tuple in the form ("username", "email", "password")
+            currUser = dbFuncs.get_user(username)
+            # If the input password and the user's passwords match, log them in
             if currUser[2] == password:
                 session["username"] = username
                 session["password"] = password
-                flash("You've successfully logged in.")
-                return redirect(url_for("home"))
+                session["email"] = currUser[1]
+                flash("You've successfully logged in.", "info")
+                return redirect(url_for("user"))
             else:
                 flash("Wrong password, try again.")
                 return render_template("login.html")
@@ -40,11 +48,22 @@ def login():
 # Profile page
 @app.route("/user/", methods=["GET", "POST"])
 def user():
-    if ("username" in session and "email" in session):
-        return render_template("user.html", username = session["username"], email = session["email"])
+    # Only allow access to user page if logged in
+    if ("username" in session and "email" in session and "password" in session):
+
+        messages = dbFuncs.get_all_messages_sent_to_user(session["username"])
+        messageList = []
+        # Each message is a tuple in the form of ("sendingUser", "receivingUser", "messageContent")
+        for message in messages:
+            messageDict = {
+                "sendingUser": message[0],
+                "messageContent": message[2]
+            }
+            messageList.append(messageDict)
+        return render_template("user.html", username = session["username"], email = session["email"],messageList=messageList)
 
     else:
-        flash("You are not logged in, please login to access user page.")
+        flash("You are not logged in, please login to access your profile page.")
         return redirect(url_for("login"))
 
 
@@ -53,7 +72,7 @@ def user():
 def logout():
     if "username" in session:
         username = session["username"]
-        session.pop("user", None)
+        session.pop("username", None)
         flash(f"You have logged out, {username}", "info")
         return redirect(url_for("login"))
 
@@ -75,23 +94,47 @@ def register():
         password = request.form["password"]
 
         # Check if username already exists. If so, flash error.
-        if (dbUserFuncs.check_if_user_exists(username) is True):
+        if (dbFuncs.check_if_user_exists(username) is True):
             flash("That username is taken, choose another.", "info")
-            return render_template("register.html")
+            return redirect(url_for("register"))
 
         else:
             session["username"] = username
             session["email"] = email
             session["password"] = password
-            dbUserFuncs.create_user(username, email, password)
-
+            dbFuncs.create_user(username, email, password)
             flash("You've successfully registered! Please login.")
             return redirect(url_for("login"))
 
 
+@app.route("/messaging/", methods=["POST", "GET"])
+def messaging():
+    if request.method == "GET":
+        if ("username" in session and "email" in session and "password" in session):
+            return render_template("messaging.html")
+
+        else:
+            flash("You must log in to send a message to another user.")
+            return redirect(url_for("login"))
+
+    elif (request.method == "POST"):
+        sendingUser = session["username"]
+        receivingUser = request.form["recipient"]
+        messageContent = request.form["messageContent"]
+
+        if (dbFuncs.check_if_user_exists(receivingUser) is False):
+            flash("No user with that username, message NOT sent.", "info")
+            return redirect(url_for("messaging"))
+
+        else:
+            dbFuncs.create_message(sendingUser, receivingUser, messageContent)
+            flash("Message successfully sent!", "info")
+            return redirect(url_for("messaging"))
+
+
 if __name__ == "__main__":
-    dbUserFuncs.create_tables()
+    dbFuncs.create_tables()
     try:
         app.run(debug=True)
     except KeyboardInterrupt:
-        dbUserFuncs.clean_up()
+        dbFuncs.clean_up()

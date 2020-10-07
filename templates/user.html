@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<h2>Hey {{ user }}! Welcome to your profile page.</h2>
+<h2>Hey {{ username }}! Welcome to your profile page.</h2>
 
 <form action="#" method="POST">
     <div>
@@ -16,10 +16,26 @@
     </div>
 
     <div>
-        <label for="pass">Password (6 character minimum):</label>
+        <label for="pass">Password:</label>
         <input type="password" id="pass" name="password" value = minlength="6" required>
     </div>
-
 </form>
+
+<table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>Sender</th>
+      <th>Message Content</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for message in messageList %}
+    <tr>
+      <td>{{ message.sendingUser }}</td>
+      <td>{{ message.messageContent }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
 
 {% endblock %}

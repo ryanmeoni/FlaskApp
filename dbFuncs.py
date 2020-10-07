@@ -7,6 +7,7 @@ cursor = db_conn.cursor()
 def create_tables():
     global cursor, db_conn
     cursor.execute("CREATE TABLE IF NOT EXISTS users (username text, email text, password text)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS messages (sendingUser text, receivingUser text, messageContent text)")
     db_conn.commit()
 
 
@@ -22,7 +23,7 @@ def get_user(username):
     for row in cursor:
         if row[0] == username:
             return row
-
+        # Return None if no user exists with given username
         return None
 
 
@@ -38,9 +39,30 @@ def check_if_user_exists(username):
             return True
 
 
+def create_message(sendingUser, recievingUser, messageContent):
+    global cursor, db_conn
+    cursor.execute(f"INSERT INTO messages VALUES ('{sendingUser}', '{recievingUser}', '{messageContent}')")
+    db_conn.commit()
+
+
+# Used for debugging
+def print_all_messages():
+    global cursor, db_conn
+    result = cursor.execute(f"SELECT * FROM messages")
+    for row in result:
+        print(row)
+
+
+def get_all_messages_sent_to_user(username):
+    global cursor, db_conn
+    result = cursor.execute(f"SELECT * FROM messages WHERE receivingUser = '{username}'")
+    return result
+
+
 def delete_tables():
     global cursor
     cursor.execute("DROP TABLE IF EXISTS users")
+    cursor.execute("DROP TABLE IF EXISTS messages")
     db_conn.commit()
 
 
